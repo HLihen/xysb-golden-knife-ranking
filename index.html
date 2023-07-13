@@ -1,0 +1,213 @@
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <script src="js/vue@next.js"></script>
+    <!-- import CSS -->
+    <link rel="stylesheet" href="js/element-plus_dist_index.css">
+    <!-- import JavaScript -->
+    <script src="js/element-plus.js"></script>
+    <script src="js/axios.min.js"></script>
+    <script src="js/moment.js"></script>
+    <script src="js/html2canvas.min.js"></script>
+    <title>Element Plus demo</title>
+    <style>
+        body {
+            background-image: url('./images/8000018.webp');
+            background-size: cover;
+            background-attachment: fixed;
+            color: white;
+            min-width: 1350px;
+        }
+
+        .cell {
+            text-align: center;
+            background-color: transparent;
+        }
+
+        .el-tabs__item.is-active{
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            background-color: darkorange!important;
+            color: white!important;
+        }
+
+        th {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            color: white !important;
+        }
+
+        .el-tabs {
+            border: none !important;
+        }
+
+        .el-table tr {
+            background-color: transparent;
+        }
+
+        .el-table__row, .el-tabs__header {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            color: white !important;
+        }
+
+        .el-table td, .el-table th.is-leaf {
+            border-bottom: 1px solid gray !important;
+        }
+
+        td {
+            background-color: transparent !important;
+        }
+
+        .el-icon {
+            color: white;
+        }
+
+        .el-table {
+            background-color: transparent;
+        }
+
+        .status-icon {
+            background-image: url("./images/statusMap2.png");
+            background-size: 256px;
+            height: 17px;
+            display: inline-block;
+        }
+
+        .duishudun {
+            background-position: 0 -239.5px;
+            width: 16px;
+        }
+
+        .score-cell {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .el-tabs {
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+        }
+
+        .el-tabs__content {
+            padding: 20px 40px !important;
+        }
+
+        .is-top{
+            border-bottom: none!important;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="table">
+        <el-row>
+            <el-col :span="4"></el-col>
+            <el-col :span="16"
+                    style="text-align: center;background-color: rgba(0,0,0,0.8);padding: 30px 0 20px 0">
+                <div class="score-cell">
+                    <div><img src="./images/logo.png" width="56"></div>
+                    <div style="margin-left: 10px;font-size: 38px;font-weight: bold">咸鱼散步会战金刀榜</div>
+                </div>
+                <p>注：单刀得分为该刀伤害领先会内对应刀型均伤的比例，最终得分取平均值。</p>
+            </el-col>
+            <el-col :span="4"></el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="4"></el-col>
+            <el-col :span="16">
+                <el-tabs type="border-card" @tab-change="getData" v-model="activeName">
+                    <el-tab-pane v-for="season in seasons" :label="season" :name="season">
+                        <el-table v-if="!error" :data="records" style="width: 100%">
+                            <el-table-column type="expand">
+                                <template #default="props">
+                                    <div style="text-align: center">
+                                        <div style="width: 90%;display: inline-block">
+                                            <el-table :data="props.row.records" size="small">
+                                                <el-table-column label="BOSS" prop="boss_name"
+                                                                 width="160"></el-table-column>
+                                                <el-table-column label="伤害" prop="damage" width="150"></el-table-column>
+                                                <el-table-column label="刀型" prop="knife_type" width="220">
+                                                    <template #default="record">
+                                                        <img v-for="char in record.row.knife_type"
+                                                             width="35"
+                                                             :onerror="`javascript:this.src='https://pcredivewiki.tw/static/images/unit/icon_unit_${char+30}.png'`"
+                                                             :src="`https://pcredivewiki.tw/static/images/unit/icon_unit_${char+60}.png`">
+                                                    </template>
+                                                </el-table-column>
+                                                <el-table-column label="单刀得分" width="120">
+                                                    <template #default="record">
+                                                        <div v-if="record.row.score>=0.2" class="score-cell">
+                                                            <div>{{record.row.score}}</div>
+                                                            <div class="status-icon duishudun"></div>
+                                                        </div>
+                                                        <div v-else class="score-cell">
+                                                            <div>{{record.row.score}}</div>
+                                                        </div>
+                                                    </template>
+                                                </el-table-column>
+                                                <el-table-column label="出刀日" prop="day"></el-table-column>
+                                            </el-table>
+                                        </div>
+                                    </div>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="排名" type="index" :indexMethod="indexMethod"
+                                             width="150"></el-table-column>
+                            <el-table-column label="用户名" prop="name" width="250"></el-table-column>
+                            <el-table-column label="最终得分" prop="score" width="200"></el-table-column>
+                            <el-table-column label="统计刀数" prop="knife_count"></el-table-column>
+                        </el-table>
+                        <div v-else style="text-align: center">
+                            <img src="./images/error.gif" width="240">
+                            <h1>该期排名尚未公布，请等待会战后颁奖仪式揭晓</h1>
+                        </div>
+                    </el-tab-pane>
+                </el-tabs>
+            </el-col>
+            <el-col :span="4"></el-col>
+        </el-row>
+    </div>
+</div>
+<script>
+    const App = {
+        data() {
+            return {
+                seasons: ['S40巨蟹座', 'S41狮子座'],
+                records: [],
+                error: false,
+                activeName: ''
+            };
+        },
+        methods: {
+            indexMethod(index) {
+                return index + 1
+            },
+
+            /**
+             * 获取某期出刀数据
+             * @param season
+             */
+            getData(season) {
+                this.records = []
+                axios.get(`./${season}.json`).then(res => {
+                    this.records = res.data
+                    this.error = false
+                }).catch(e => {
+                    this.error = true
+                })
+            }
+        },
+        created() {
+            this.activeName = this.seasons[0]
+            this.getData(this.activeName)
+        },
+        mounted() {
+        },
+    }
+    const app = Vue.createApp(App)
+    app.use(ElementPlus)
+    app.mount("#app")
+</script>
+</body>
+</html>
