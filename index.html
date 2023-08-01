@@ -116,6 +116,7 @@
                     <div style="margin-left: 10px;font-size: 38px;font-weight: bold">咸鱼散步会战金刀榜</div>
                 </div>
                 <p>注：单刀得分为该刀伤害领先会内对应刀型均伤的比例，最终得分取平均值。</p>
+                <el-button class="el-button--warning" onclick="window.open('./daidao.html')">代刀表</el-button>
             </el-col>
             <el-col :span="4"></el-col>
         </el-row>
@@ -179,7 +180,7 @@
     const App = {
         data() {
             return {
-                seasons: ['S40巨蟹座', 'S41狮子座'],
+                seasons: ['S40巨蟹座', 'S41狮子座','S42处女座'],
                 records: [],
                 error: false,
                 activeName: ''

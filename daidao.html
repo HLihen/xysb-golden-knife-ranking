@@ -1,0 +1,201 @@
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <script src="js/vue@next.js"></script>
+    <!-- import CSS -->
+    <link rel="stylesheet" href="js/element-plus_dist_index.css">
+    <!-- import JavaScript -->
+    <script src="js/element-plus.js"></script>
+    <script src="js/axios.min.js"></script>
+    <script src="js/moment.js"></script>
+    <script src="js/html2canvas.min.js"></script>
+    <title>咸鱼散步代刀表</title>
+    <style>
+        .el-table__cell {
+            text-align: center !important;
+        }
+
+        .ting-div {
+            border: #f89898 1px solid;
+            border-radius: 25%;
+            font-size: 12px;
+            background-color: #fef0f0;
+            color: #c45656;
+        }
+
+        .pu-div {
+            border: #79bbff 1px solid;
+            border-radius: 25%;
+            font-size: 12px;
+            background-color: #ecf5ff;
+            color: #337ecc;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-button @click="exportImage()">导出图像</el-button>
+    <div id="table">
+        <h1>{{ groupName }}{{ new Date(start).getMonth() + 1 }}月会战代刀统计表</h1>
+        <p>注：数据取自群会战机器人公开API。表格中展示了会战5天，每天3刀的代刀情况。(泳圈耗时两小时半开发（喜）)</p>
+        <el-table :data="tableData2" @sort-change="sortMethod">
+            <el-table-column label="成员（被代刀数）"
+                             width="150"
+                             prop="qqid"
+                             sortable="custom">
+                <template #default="scope">
+                    {{ memberMap[scope.row.qqid] }}
+                    <b>({{ memberCounts[scope.row.qqid] }})</b>
+                </template>
+            </el-table-column>
+            <el-table-column label="代刀手（代刀数）">
+                <el-table-column v-for="(behalf,i) in behalves"
+                                 :key="i"
+                                 width="180"
+                                 :prop="behalf.toString()"
+                                 :label="`${memberMap[behalf]}(${behalfCounts[behalf]})`">
+                    <template #default="scope">
+                        <div style="display: flex;flex-direction: row" v-if="scope.row[behalf]">
+                            <div style="width:40px;height:75px" v-for="date in dates">
+                                <div style="width: 100%"
+                                     v-for="record in scope.row[behalf]"
+                                     v-show="record.challenge_time===date">
+                                    <el-tooltip
+                                            class="box-item"
+                                            effect="dark"
+                                            :hide-after="0"
+                                            placement="bottom-start">
+                                        <template #content>
+                                            <div style="text-align: center">
+                                                {{ memberMap[behalf] }} 代 {{ memberMap[scope.row.qqid] }}
+                                                <br/>
+                                                {{ record.cycle }}-{{ record.boss_num }} : {{ record.damage }}
+                                            </div>
+                                        </template>
+                                        <div class="pu-div" type="success" v-if="record.damage<90000000">普</div>
+                                        <div class="ting-div" type="danger" v-else>停</div>
+                                    </el-tooltip>
+                                </div>
+                                <div style="width: 100%"
+                                     v-for="k in 3-scope.row[behalf].filter(rec=>{return rec.challenge_time===date}).length">
+                                    -
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table-column>
+        </el-table>
+    </div>
+</div>
+<script>
+    const App = {
+        data() {
+            return {
+                //会战开始时间
+                start: '2023-07-26',
+                //机器人公开Api地址
+                api: 'http://47.110.240.210:8082/clan/816656237/statistics/api/?apikey=fcOJZYuNa9MbRPbd',
+
+                groupName: '',
+                memberMap: {},
+                challenges: [],
+                members: [],
+                behalves: new Set(),
+                tableData: {},
+                tableData2: [],
+                behalfCounts: {},
+                memberCounts: {},
+                dates: []
+            };
+        },
+        methods: {
+            sortMethod(attr) {
+                this.tableData2 = this.tableData2.sort((a, b) => {
+                    if (attr.order === 'ascending') {
+                        return this.memberCounts[a.qqid] - this.memberCounts[b.qqid]
+                    }else{
+                        return this.memberCounts[b.qqid] - this.memberCounts[a.qqid]
+                    }
+                })
+            },
+
+            exportImage() {
+                html2canvas(document.querySelector("#table")).then(canvas => {
+                    const url = canvas.toDataURL()
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.setAttribute('download', '')
+                    document.body.appendChild(link)
+                    link.click()
+                });
+            }
+        },
+        created() {
+            axios.get(this.api).then(res => {
+                    let data = res.data
+                    this.groupName = data.groupinfo[0].group_name
+                    this.members = data.members
+                    //qq号和昵称索引
+                    data.members.forEach(member => {
+                        this.memberMap[member.qqid] = member.nickname
+                    })
+                    data.challenges.forEach(challenge => {
+                        //在规定时间里
+                        //如果是代刀且整刀
+                        if (challenge.behalf && !challenge.is_continue) {
+                            //格式化时间戳
+                            challenge.challenge_time = moment((challenge.challenge_time - 5 * 3600) * 1000).format('YYYY-MM-DD')
+                            //筛掉整活报刀
+                            if (moment(challenge.challenge_time).isBetween(moment(this.start).add(-1, 'd').format('YYYY-MM-DD'), moment(this.start).add(5, 'd').format('YYYY-MM-DD'))) {
+                                let behalf = challenge.behalf
+                                this.behalves.add(behalf)
+                                let qqid = challenge.qqid
+                                if (!this.tableData[qqid]) {
+                                    this.tableData[qqid] = {}
+                                }
+                                if (!this.tableData[qqid][behalf]) {
+                                    this.tableData[qqid][behalf] = []
+                                }
+                                this.tableData[qqid][behalf].push(challenge)
+
+                                //统计
+                                if (!this.behalfCounts[behalf]) {
+                                    this.behalfCounts[behalf] = 0
+                                }
+                                this.behalfCounts[behalf]++
+                                if (!this.memberCounts[qqid]) {
+                                    this.memberCounts[qqid] = 0
+                                }
+                                this.memberCounts[qqid]++
+                            }
+                        }
+                    })
+                    //生成表格数据
+                    for (let key in this.tableData) {
+                        let value = this.tableData[key]
+                        value.qqid = key
+                        this.tableData2.push(value)
+                    }
+                    //生成会战时间
+                    for (let i = 0; i < 5; i++) {
+                        this.dates.push(moment(this.start).add(i, 'd').format('YYYY-MM-DD'))
+                    }
+                }
+            )
+        },
+        mounted() {
+            setTimeout(() => {
+                let width = getComputedStyle(document.getElementsByClassName('el-table__header')[0], null).width
+                console.log(width)
+                document.getElementById('table').style.width = width
+            }, 500)
+        },
+    }
+    const app = Vue.createApp(App)
+    app.use(ElementPlus)
+    app.mount("#app")
+</script>
+</body>
+</html>
