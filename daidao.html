@@ -133,7 +133,7 @@
             }
         },
         created() {
-            axios.get(this.api).then(res => {
+            axios.get('./daidao.json').then(res => {
                     let data = res.data
                     this.groupName = data.groupinfo[0].group_name
                     this.members = data.members
