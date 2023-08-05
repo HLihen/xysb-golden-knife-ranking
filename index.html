@@ -14,11 +14,11 @@
     <style>
         body {
             color: white;
-            margin:0!important;
+            margin: 0 !important;
             min-width: 1350px;
         }
 
-        .bgi{
+        .bgi {
             background-size: cover;
             background-attachment: fixed;
             transition: 0.8s;
@@ -133,7 +133,8 @@
                                             <el-table :data="props.row.records" size="small">
                                                 <el-table-column label="BOSS" prop="boss_name"
                                                                  width="160"></el-table-column>
-                                                <el-table-column label="伤害" prop="damage" width="150"></el-table-column>
+                                                <el-table-column label="伤害" prop="damage" width="150"
+                                                                 sortable></el-table-column>
                                                 <el-table-column label="刀型" prop="knife_type" width="220">
                                                     <template #default="record">
                                                         <img v-for="char in record.row.knife_type"
@@ -142,14 +143,14 @@
                                                              :src="`https://pcredivewiki.tw/static/images/unit/icon_unit_${char+60}.png`">
                                                     </template>
                                                 </el-table-column>
-                                                <el-table-column label="单刀得分" width="120">
+                                                <el-table-column label="单刀得分" width="120" sortable prop="score">
                                                     <template #default="record">
                                                         <div v-if="record.row.score>=0.2" class="score-cell">
-                                                            <div>{{record.row.score}}</div>
+                                                            <div>{{(record.row.score*100).toFixed(2)}}%</div>
                                                             <div class="status-icon duishudun"></div>
                                                         </div>
                                                         <div v-else class="score-cell">
-                                                            <div>{{record.row.score}}</div>
+                                                            <div>{{(record.row.score*100).toFixed(2)}}%</div>
                                                         </div>
                                                     </template>
                                                 </el-table-column>
@@ -162,7 +163,11 @@
                             <el-table-column label="排名" type="index" :indexMethod="indexMethod"
                                              width="150"></el-table-column>
                             <el-table-column label="用户名" prop="name" width="250"></el-table-column>
-                            <el-table-column label="最终得分" prop="score" width="200"></el-table-column>
+                            <el-table-column label="最终得分" prop="score" width="200" sortable>
+                                <template #default="record">
+                                    {{(record.row.score*100).toFixed(2)}}%
+                                </template>
+                            </el-table-column>
                             <el-table-column label="统计刀数" prop="knife_count"></el-table-column>
                         </el-table>
                         <div v-else style="text-align: center">
@@ -180,7 +185,7 @@
     const App = {
         data() {
             return {
-                seasons: ['S40巨蟹座', 'S41狮子座','S42处女座'],
+                seasons: ['S40巨蟹座', 'S41狮子座', 'S42处女座'],
                 records: [],
                 error: false,
                 activeName: ''
