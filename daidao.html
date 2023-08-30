@@ -73,7 +73,7 @@
                                                 {{ record.cycle }}-{{ record.boss_num }} : {{ record.damage }}
                                             </div>
                                         </template>
-                                        <div class="pu-div" type="success" v-if="record.damage<90000000">普</div>
+                                        <div class="pu-div" type="success" v-if="record.damage<85000000">普</div>
                                         <div class="ting-div" type="danger" v-else>停</div>
                                     </el-tooltip>
                                 </div>
@@ -94,7 +94,7 @@
         data() {
             return {
                 //会战开始时间
-                start: '2023-07-26',
+                start: '2023-08-26',
                 //机器人公开Api地址
                 api: 'http://47.110.240.210:8082/clan/816656237/statistics/api/?apikey=fcOJZYuNa9MbRPbd',
 
